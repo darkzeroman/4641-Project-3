@@ -2,6 +2,7 @@
 <classpath>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="lib" path="/Users/chronon/Development/android-workspace/ABAGAIL/ABAGAIL.jar"/>
+	<classpathentry kind="lib" path="/Users/darkzeroman/personal/4641-Project-3/ABAGAIL.jar"/>
+	<classpathentry kind="lib" path="/Users/darkzeroman/personal/4641-Project-3/weka.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
