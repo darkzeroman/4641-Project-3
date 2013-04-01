@@ -13,32 +13,11 @@ cluster () {
     mkdir -p $OUTPUTDIR
     find $OUTPUTDIR | grep ".txt" | xargs rm
 
-    echo "Rows correspond to Cluster Algorithm k (1,2,3,4,6,9), Column correspond to number of K used (1,2,3,4,6,9)"
+    echo "Rows correspond to Cluster Algorithm k, Column correspond to number of K used (1,2,3,4,6,9)"
     for TRAINER in ${TRAINING_SETS[*]}; do
         echo $TRAINER
-        echo "KMean-Manhattan"
-        for n in 1 2 3 4 6 9; do
-            for i in {1..10}; do
-                $WEKA weka.clusterers.SimpleKMeans -N $n -A "weka.core.ManhattanDistance -R first-last" -I 500 -S $RANDOM -t $DATADIR/$TRAINER -c last 2>&1 >  $OUTPUTDIR/MD-$TRAINER-n$n-i$i.txt
-            done
-            cd $OUTPUTDIR
-            ruby script.rb
-            cd ../..
-            find $OUTPUTDIR | grep ".txt" | xargs rm
-        done
 
-
-        echo "KMean-Euclidean"
-        for n in 1 2 3 4 6 9; do
-            for i in {1..10}; do
-                $WEKA weka.clusterers.SimpleKMeans -N $n -A "weka.core.EuclideanDistance -R first-last" -I 500 -S $RANDOM -t $DATADIR/$TRAINER -c last 2>&1 >  $OUTPUTDIR/MD-$TRAINER-n$n-i$i.txt
-            done
-            cd $OUTPUTDIR
-            ruby script.rb
-            cd ../..
-            find $OUTPUTDIR | grep ".txt" | xargs rm
-        done
-
+        STARTING_TIME=$SECONDS
         echo "EM"
         for n in 1 2 3 4 6 9; do
             for i in {1..10}; do
@@ -49,6 +28,35 @@ cluster () {
             cd ../..
             find $OUTPUTDIR | grep ".txt" | xargs rm
         done
+        echo "Time: $STARTING_TIME $SECONDS"
+
+        return
+
+        STARTING_TIME=$SECONDS
+        echo "KMean-Manhattan"
+        for n in 1 2 3 4 6 9; do
+            for i in {1..10}; do
+                $WEKA weka.clusterers.SimpleKMeans -N $n -A "weka.core.ManhattanDistance -R first-last" -I 500 -S $RANDOM -t $DATADIR/$TRAINER -c last 2>&1 >  $OUTPUTDIR/MD-$TRAINER-n$n-i$i.txt
+            done
+            cd $OUTPUTDIR
+            ruby script.rb
+            cd ../..
+            find $OUTPUTDIR | grep ".txt" | xargs rm
+        done
+        echo "Time: $STARTING_TIME $SECONDS"
+
+        STARTING_TIME=$SECONDS
+        echo "KMean-Euclidean"
+        for n in 1 2 3 4 6 9; do
+            for i in {1..10}; do
+                $WEKA weka.clusterers.SimpleKMeans -N $n -A "weka.core.EuclideanDistance -R first-last" -I 500 -S $RANDOM -t $DATADIR/$TRAINER -c last 2>&1 >  $OUTPUTDIR/MD-$TRAINER-n$n-i$i.txt
+            done
+            cd $OUTPUTDIR
+            ruby script.rb
+            cd ../..
+            find $OUTPUTDIR | grep ".txt" | xargs rm
+        done
+        echo "Time: $STARTING_TIME $SECONDS"
     done
 }
 
@@ -65,27 +73,29 @@ reduce () {
     for TRAINER in ${TRAINING_SETS[*]}; do
         echo $TRAINER
 
+        STARTING_TIME=$SECONDS
+        echo "PCA with n dimensions (1,2,3,4,5), kmeans"
+        for n in 1 2 3 4; do
+            find $OUTPUTDIR | grep "\.arff\|\.txt" | xargs rm
+            for i in {1..20}; do
+                $WEKA weka.filters.unsupervised.attribute.PrincipalComponents -R 0.95 -A 5 -M $n -i $DATADIR/$TRAINER -o $OUTPUTDIR/arff/$TRAINER-PCA-n$n-i$i.arff -c last
+                $WEKA weka.clusterers.SimpleKMeans -N $n -A "weka.core.ManhattanDistance -R first-last" -I 500 -S $RANDOM -t $OUTPUTDIR/arff/$TRAINER-PCA-n$n-i$i.arff -c last 2>&1 >  $OUTPUTDIR/kmeans/PCA-$TRAINER-n$n-i$i.txt
+            done
+            cd $OUTPUTDIR/kmeans
+            ruby script.rb
+            cd ../../..
+        done
+        echo "Time: $STARTING_TIME, $SECONDS"
+        return
+
         echo "Random Projection, Rows correspond to dimensions reduced to: (1,2,3,4,6,9). Columns show repeated trials."
 
         for n in 1 2 3 4 6 9; do
             find $OUTPUTDIR | grep "\.arff\|\.txt" | xargs rm
             for i in {1..20}; do
                 $WEKA weka.filters.unsupervised.attribute.RandomProjection -N $n -R $RANDOM -D Sparse1 -i $DATADIR/$TRAINER -o $OUTPUTDIR/arff/$TRAINER-n$n-i$i.arff -c last 
-                $WEKA weka.clusterers.SimpleKMeans -N $n -A "weka.core.ManhattanDistance -R first-last" -I 500 -S $RANDOM -t $OUTPUTDIR/arff/$TRAINER-n$n-i$i.arff -c last 2>&1 >  $OUTPUTDIR/kmeans/RP-$TRAINER-n$n-i$i.txt
-            done
-            cd $OUTPUTDIR/kmeans
-            ruby script.rb
-            cd ../../..
-        done
-
-        return
-
-        echo "PCA with n dimensions (1,2,3,4,5), kmeans"
-        for n in 1 2 3 4 5; do
-            find $OUTPUTDIR | grep "\.arff\|\.txt" | xargs rm
-            for i in {1..5}; do
-                $WEKA weka.filters.unsupervised.attribute.PrincipalComponents -R 0.95 -A 5 -M $n -i $DATADIR/$TRAINER -o $OUTPUTDIR/arff/$TRAINER-PCA-n$n-i$i.arff -c last
-                $WEKA weka.clusterers.SimpleKMeans -N $n -A "weka.core.ManhattanDistance -R first-last" -I 500 -S $RANDOM -t $OUTPUTDIR/arff/$TRAINER-PCA-n$n-i$i.arff -c last 2>&1 >  $OUTPUTDIR/kmeans/PCA-$TRAINER-n$n-i$i.txt
+                # $WEKA weka.clusterers.SimpleKMeans -N $n -A "weka.core.ManhattanDistance -R first-last" -I 500 -S $RANDOM -t $OUTPUTDIR/arff/$TRAINER-n$n-i$i.arff -c last 2>&1 >  $OUTPUTDIR/kmeans/RP-$TRAINER-n$n-i$i.txt
+                $WEKA weka.clusterers.EM -I 100 -N $n -M 1.0E-6 -S $RANDOM -t $OUTPUTDIR/arff/$TRAINER-n$n-i$i.arff -c last 2>&1 >  $OUTPUTDIR/kmeans/RP-$TRAINER-n$n-i$i.txt
             done
             cd $OUTPUTDIR/kmeans
             ruby script.rb
@@ -109,37 +119,45 @@ nn_reduce () {
     
     for TRAINER in ${TRAINING_SETS[*]}; do
         echo $TRAINER
+
+        STARTING_TIME=$SECONDS
+
         echo "Random Projection"
-        for n in 1 2 3 4 6 9; do
+        for n in 3 4; do
             find $OUTPUTDIR | grep "\.arff\|/.txt" | xargs rm
-            for i in {1..2}; do
+            for i in {1..10}; do
                 $WEKA weka.filters.unsupervised.attribute.RandomProjection -N $n -R $RANDOM -D Sparse1 -i $DATADIR/$TRAINER -o $OUTPUTDIR/arff/$TRAINER-RP-n$n-i$i.arff -c last 
-                $WEKA weka.clusterers.SimpleKMeans -N $n -A "weka.core.ManhattanDistance -R first-last" -I 500 -S $RANDOM -t $OUTPUTDIR/arff/$TRAINER-RP-n$n-i$i.arff -c last 2>&1 >  $OUTPUTDIR/kmeans/RP-$TRAINER-n$n-i$i.txt
+                # $WEKA weka.clusterers.SimpleKMeans -N $n -A "weka.core.ManhattanDistance -R first-last" -I 500 -S $RANDOM -t $OUTPUTDIR/arff/$TRAINER-RP-n$n-i$i.arff -c last 2>&1 >  $OUTPUTDIR/kmeans/RP-$TRAINER-n$n-i$i.txt
                 $WEKA weka.classifiers.functions.MultilayerPerceptron -L 0.3 -M 0.2 -N 500 -V 0 -S $RANDOM -E 20 -H a -R -t $OUTPUTDIR/arff/$TRAINER-RP-n$n-i$i.arff -c last 2>&1 > $OUTPUTDIR/nn/RP-$TRAINER-n$n-i$i.txt
             done
-            cd $OUTPUTDIR/kmeans
+            cd $OUTPUTDIR/nn
             ruby script.rb
             cd ../../..
          
         done
 
+
+        echo "Time: $STARTING_TIME $SECONDS"
+
+        return
+
         echo "PCA with n dimensions (1,2,3,4,5), kmeans and then nn"
-        for n in 1 2 3 4 5; do
+        for n in 1 2 3 4; do
             echo $n
             find $OUTPUTDIR | grep "\.arff\|/.txt" | xargs rm
-            for i in {1..5}; do 
+            for i in {1..20}; do 
                 $WEKA weka.filters.unsupervised.attribute.PrincipalComponents -R 0.95 -A 5 -M $n -i $DATADIR/$TRAINER -o $OUTPUTDIR/arff/$TRAINER-PCA-n$n.arff -c last
-                $WEKA weka.clusterers.SimpleKMeans -N $n -A "weka.core.ManhattanDistance -R first-last" -I 500 -S $RANDOM -t $OUTPUTDIR/arff/$TRAINER-PCA-n$n.arff -c last 2>&1 >  $OUTPUTDIR/kmeans/PCA-$TRAINER-n$n-i$i.txt
+                # $WEKA weka.clusterers.SimpleKMeans -N $n -A "weka.core.ManhattanDistance -R first-last" -I 500 -S $RANDOM -t $OUTPUTDIR/arff/$TRAINER-PCA-n$n.arff -c last 2>&1 >  $OUTPUTDIR/kmeans/PCA-$TRAINER-n$n-i$i.txt
                 $WEKA weka.classifiers.functions.MultilayerPerceptron -L 0.3 -M 0.2 -N 500 -V 0 -S $RANDOM -E 20 -H a -R -t $OUTPUTDIR/arff/$TRAINER-PCA-n$n.arff -c last 2>&1 > $OUTPUTDIR/nn/PCA-$TRAINER-n$n-i$i.txt
             done
             cd $OUTPUTDIR/nn
             ruby script.rb
             cd ../../..   
-
-            cd $OUTPUTDIR/kmeans
-            ruby script.rb
-            cd ../../..
         done
+
+
+        
+        
     done
 }
 
@@ -151,20 +169,25 @@ nn_orig () {
     
     # Question 5.5
 
+    STARTING_TIME=$SECONDS
+
     for TRAINER in ${TRAINING_SETS[*]}; do
         echo $TRAINER
         for n in 1; do
             find $OUTPUTDIR | grep "\.txt" | xargs rm
-            for i in {1..10}; do
-                $WEKA weka.classifiers.functions.MultilayerPerceptron -L 0.3 -M 0.2 -N 500 -V 0 -S $RANDOM -E 20 -H a -R -t $DATADIR/$TRAINER -c last 2>&1 > $OUTPUTDIR/nn/$TRAINER-n$n-i$i.txt
+            for i in {1..5}; do
+                $WEKA weka.classifiers.functions.MultilayerPerceptron -L 0.3 -M 0.2 -N 500 -V 0 -S $RANDOM -E 20 -H a -R -t $DATADIR/$TRAINER -split-percentage 66 2>&1 > $OUTPUTDIR/nn/$TRAINER-n$n-i$i.txt
             done
             # echo $n
 
             cd $OUTPUTDIR/nn
-            ruby script.rb
+            # ruby script.rb
             cd ../../..
         done
     done
+
+    echo "Time: $STARTING_TIME $SECONDS"
+
 }
 
 nn_cluster () {
@@ -179,21 +202,24 @@ nn_cluster () {
 
     echo "Rows correspond to k (1,2,3) clusters, columns are repeated trials."
 
+    STARTING_TIME=$SECONDS
     for TRAINER in ${TRAINING_SETS[*]}; do
         echo $TRAINER
-        for n in 1 2 3; do
+        for n in 4; do
             find $OUTPUTDIR | grep "\.text\|\.arff" | xargs rm
-            for i in {1..2}; do
-                $WEKA weka.filters.unsupervised.attribute.AddCluster -W "weka.clusterers.SimpleKMeans -N $n -A \"weka.core.EuclideanDistance -R first-last\" -I 500 -S $RANDOM" -i $DATADIR/$TRAINER -o $OUTPUTDIR/arff/unordered/$TRAINER-n$n-i$i.arff -c last
+            for i in {1..5}; do
+                $WEKA weka.filters.unsupervised.attribute.AddCluster -W "weka.clusterers.SimpleKMeans -N $n -A \"weka.core.ManhattanDistance -R first-last\" -I 500 -S $RANDOM" -i $DATADIR/$TRAINER -o $OUTPUTDIR/arff/unordered/$TRAINER-n$n-i$i.arff -c last
                 # $WEKA weka.filters.unsupervised.attribute.Reorder -R first-4,last,5 -i $OUTPUTDIR/arff/unordered/$TRAINER-n$n-i$i.arff -o $OUTPUTDIR/arff/$TRAINER-n$n-i$i.arff
                 $WEKA weka.filters.unsupervised.attribute.Reorder -R first-5,last,6 -i $OUTPUTDIR/arff/unordered/$TRAINER-n$n-i$i.arff -o $OUTPUTDIR/arff/$TRAINER-n$n-i$i.arff
-                $WEKA weka.classifiers.functions.MultilayerPerceptron -L 0.3 -M 0.2 -N 500 -V 0 -S $RANDOM -E 20 -H a -R -t $OUTPUTDIR/arff/$TRAINER-n$n-i$i.arff -c last 2>&1 > $OUTPUTDIR/nn/$TRAINER-n$n-i$i.txt
+                $WEKA weka.classifiers.functions.MultilayerPerceptron -L 0.3 -M 0.2 -N 500 -V 0 -S $RANDOM -E 20 -H a -R -t $OUTPUTDIR/arff/$TRAINER-n$n-i$i.arff -split-percentage 66 2>&1 > $OUTPUTDIR/nn/$TRAINER-n$n-i$i.txt
             done
             cd $OUTPUTDIR/nn
-            ruby script.rb
+            # ruby script.rb
             cd ../../..
         done
     done
+    echo "Time: $STARTING_TIME $SECONDS"
+
 }
 
 usage () {
