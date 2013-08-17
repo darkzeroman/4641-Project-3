@@ -123,7 +123,7 @@ nn_reduce () {
         STARTING_TIME=$SECONDS
 
         echo "Random Projection"
-        for n in 3 4; do
+        for n in 1 2 3 4 5; do
             find $OUTPUTDIR | grep "\.arff\|/.txt" | xargs rm
             for i in {1..10}; do
                 $WEKA weka.filters.unsupervised.attribute.RandomProjection -N $n -R $RANDOM -D Sparse1 -i $DATADIR/$TRAINER -o $OUTPUTDIR/arff/$TRAINER-RP-n$n-i$i.arff -c last 
@@ -209,8 +209,8 @@ nn_cluster () {
             find $OUTPUTDIR | grep "\.text\|\.arff" | xargs rm
             for i in {1..5}; do
                 $WEKA weka.filters.unsupervised.attribute.AddCluster -W "weka.clusterers.SimpleKMeans -N $n -A \"weka.core.ManhattanDistance -R first-last\" -I 500 -S $RANDOM" -i $DATADIR/$TRAINER -o $OUTPUTDIR/arff/unordered/$TRAINER-n$n-i$i.arff -c last
-                # $WEKA weka.filters.unsupervised.attribute.Reorder -R first-4,last,5 -i $OUTPUTDIR/arff/unordered/$TRAINER-n$n-i$i.arff -o $OUTPUTDIR/arff/$TRAINER-n$n-i$i.arff
-                $WEKA weka.filters.unsupervised.attribute.Reorder -R first-5,last,6 -i $OUTPUTDIR/arff/unordered/$TRAINER-n$n-i$i.arff -o $OUTPUTDIR/arff/$TRAINER-n$n-i$i.arff
+                $WEKA weka.filters.unsupervised.attribute.Reorder -R first-4,last,5 -i $OUTPUTDIR/arff/unordered/$TRAINER-n$n-i$i.arff -o $OUTPUTDIR/arff/$TRAINER-n$n-i$i.arff
+                # $WEKA weka.filters.unsupervised.attribute.Reorder -R first-5,last,6 -i $OUTPUTDIR/arff/unordered/$TRAINER-n$n-i$i.arff -o $OUTPUTDIR/arff/$TRAINER-n$n-i$i.arff
                 $WEKA weka.classifiers.functions.MultilayerPerceptron -L 0.3 -M 0.2 -N 500 -V 0 -S $RANDOM -E 20 -H a -R -t $OUTPUTDIR/arff/$TRAINER-n$n-i$i.arff -split-percentage 66 2>&1 > $OUTPUTDIR/nn/$TRAINER-n$n-i$i.txt
             done
             cd $OUTPUTDIR/nn

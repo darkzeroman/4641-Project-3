@@ -13,6 +13,8 @@ end
 li = []
 list.each { |cluster| li << cluster.percent_incorrect}
 p li.join(',')
+
+# p list.first.confusion_matrix
 # p [li.mean, li.standard_deviation, li.variance].inspect.gsub("\[",'').gsub("\]",'')
 
 

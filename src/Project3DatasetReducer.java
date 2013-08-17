@@ -1,4 +1,3 @@
-
 import java.io.IOException;
 import java.util.ArrayList;
 
@@ -24,13 +23,13 @@ public class Project3DatasetReducer {
 
 		try {
 			wine = (new CSVDataSetReader("data/iris.csv")).read();
-//			spambase = (new CSVDataSetReader("data/spambase.csv")).read();
+			// spambase = (new CSVDataSetReader("data/spambase.csv")).read();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		(new LabelSplitFilter()).filter(wine);
 
-//		(new LabelSplitFilter()).filter(spambase);
+		// (new LabelSplitFilter()).filter(spambase);
 
 		// REDUCE DATA
 		/*
@@ -40,7 +39,7 @@ public class Project3DatasetReducer {
 		 * hdThread.wait(); } catch (InterruptedException e) { // TODO
 		 * Auto-generated catch block e.printStackTrace(); }
 		 */
-		DataSetWorker adw = new DataSetWorker(wine, "wine");
+		DataSetWorker adw = new DataSetWorker(wine, "iris");
 		adw.run();
 		// DataSetWorker hdw = new DataSetWorker(spambase, "spambase");
 		// hdw.run();
@@ -56,7 +55,7 @@ public class Project3DatasetReducer {
 		private DataSet clean;
 		ArrayList<Tuple<ReversibleFilter, String>> filters;
 		private String setName;
-		private final int toKeep = 5;
+		private final int toKeep = 2;
 
 		public DataSetWorker(DataSet d, String setName) {
 			this.setName = setName;
@@ -70,10 +69,12 @@ public class Project3DatasetReducer {
 			// PrincipalComponentAnalysis(clean, toKeep, 1E-6),
 			// "_pca.csv"));
 			filters.add(new Tuple<ReversibleFilter, String>(new IndependentComponentAnalysis(clean, toKeep), "_ica.csv"));
-//			filters.add(new Tuple<ReversibleFilter, String>(
-//					new RandomizedProjectionFilter(toKeep, clean.get(0).size()), "_rp.csv"));
-//			filters.add(new Tuple<ReversibleFilter, String>(new InsignificantComponentAnalysis(clean, toKeep,
-//					Double.MAX_VALUE), "_insigca.csv"));
+			// filters.add(new Tuple<ReversibleFilter, String>(
+			// new RandomizedProjectionFilter(toKeep, clean.get(0).size()),
+			// "_rp.csv"));
+			// filters.add(new Tuple<ReversibleFilter, String>(new
+			// InsignificantComponentAnalysis(clean, toKeep,
+			// Double.MAX_VALUE), "_insigca.csv"));
 		}
 
 		public void filter() {
@@ -83,6 +84,7 @@ public class Project3DatasetReducer {
 				String ext = tup.snd();
 
 				filter.filter(clean);
+				System.out.println(clean.toString());
 				DataSetWriter wr = new DataSetWriter(clean, reducedDir + setName + ext);
 				try {
 					wr.write();
